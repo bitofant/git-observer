@@ -1,0 +1,444 @@
+/* The whole app's palette. Every color in this file resolves to one of these,
+   so a theme is these values and nothing else. */
+:root {
+  /* Three elevation steps, lightest = nearest. Surfaces are separated ONLY by
+     these steps plus shadow — there is no border colour in the palette.
+     Nested content must rise (--bg < --panel < --raised), never sink. */
+  --bg: #0b0e14;
+  --panel: #141922;
+  --raised: #1c222d;
+  --text: #bfbdb6;
+  --muted: #6b7280;
+  --accent: #39bae6;
+  --danger: #e5534b;
+  --danger-hover: #d8453d;
+  --success: #7fd962;
+  --warning: #e6b800;
+  /* Text sitting on an --accent / --danger fill, which are too light for --text. */
+  --on-accent: #04222c;
+  --on-danger: #ffffff;
+
+  /* Radius scale. Nested boxes must stay concentric: an inner radius is the
+     outer radius minus the padding between them, so --r-lg (12) wrapping 8px
+     of padding takes --r-sm (4) inside. */
+  --r-sm: 4px;
+  --r-md: 8px;
+  --r-lg: 12px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Controls are filled, never outlined — so kill the UA default first. Dropping
+   a `border` declaration from a button/input does NOT mean "no border": the
+   browser falls back to `border-style: outset`, i.e. a Windows-98 bevel. */
+button,
+input,
+select,
+textarea {
+  border: none;
+  font: inherit;
+  color: var(--text);
+  background: var(--raised);
+  border-radius: var(--r-md);
+  padding: 6px 10px;
+}
+
+select {
+  /* Native selects draw their own bevelled chrome and ignore background. */
+  appearance: none;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* Focus can't ride on a border here (there isn't one). A ring, so it never
+   shifts layout. Any new control must keep a non-border focus indicator. */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 10%, var(--raised));
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+button.primary {
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+
+button.primary:hover:not(:disabled) {
+  background: color-mix(in srgb, #fff 12%, var(--accent));
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+.app {
+  height: 100%;
+  overflow: auto;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.loading,
+.empty {
+  color: var(--muted);
+  padding: 12px 0;
+}
+
+.form-error {
+  color: var(--danger);
+  padding: 8px 0;
+}
+
+/* --- main menu ----------------------------------------------------------- */
+
+.menu {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+.menu-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.menu-head h1 {
+  font-size: 20px;
+  margin: 0;
+}
+
+.status-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin: 12px 0;
+}
+
+.chip {
+  background: var(--raised);
+  border-radius: var(--r-sm);
+  padding: 2px 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.chip.ok {
+  color: var(--success);
+}
+
+.chip.bad {
+  color: var(--danger);
+}
+
+.status-detail {
+  font-size: 12px;
+  color: var(--danger);
+}
+
+.add-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  background: var(--panel);
+  padding: 12px;
+  border-radius: var(--r-lg);
+  margin-bottom: 16px;
+}
+
+.add-form input {
+  flex: 1 1 160px;
+}
+
+.add-form .form-error {
+  flex-basis: 100%;
+}
+
+.people {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.people li {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.person-row {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  background: var(--panel);
+  border-radius: var(--r-lg);
+  padding: 12px;
+  text-align: left;
+}
+
+.person-row:hover {
+  background: color-mix(in srgb, var(--accent) 12%, var(--panel));
+}
+
+.person-name {
+  font-weight: 600;
+}
+
+.person-login {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Never hover-only: touch has no hover, so the control would be unreachable. */
+.person-remove {
+  background: var(--panel);
+  color: var(--muted);
+  opacity: 0.4;
+  padding: 0 12px;
+  border-radius: var(--r-lg);
+}
+
+.person-remove:hover {
+  opacity: 1;
+  background: var(--danger);
+  color: var(--on-danger);
+}
+
+/* --- dashboard ----------------------------------------------------------- */
+
+.dashboard {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+.dash-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dash-head h1 {
+  font-size: 20px;
+  margin: 0;
+}
+
+.dash-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.week-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0;
+  flex-wrap: wrap;
+}
+
+.week-label {
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+}
+
+.week-label .muted {
+  font-size: 12px;
+}
+
+/* 320px is chosen so a 640px viewport can't fit two columns — phones stay
+   single-column by arithmetic, with no second media query to keep in sync. */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.card {
+  background: var(--panel);
+  border-radius: var(--r-lg);
+  padding: 16px;
+}
+
+.card.wide {
+  grid-column: 1 / -1;
+}
+
+.card h2 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.stat {
+  /* Rises off the card's --panel; a --bg fill here would be the sunken well. */
+  background: var(--raised);
+  border-radius: var(--r-sm);
+  padding: 8px 12px;
+  flex: 1 1 auto;
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.size-bar {
+  display: flex;
+  gap: 2px;
+  margin-top: 12px;
+  height: 22px;
+}
+
+.size-seg {
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: var(--r-sm);
+  color: var(--on-accent);
+  min-width: 22px;
+}
+
+.size-seg.large {
+  background: var(--accent);
+}
+
+.size-seg.medium {
+  background: color-mix(in srgb, var(--accent) 65%, var(--raised));
+}
+
+.size-seg.small {
+  background: color-mix(in srgb, var(--accent) 35%, var(--raised));
+  color: var(--text);
+}
+
+.size-seg.trivial {
+  background: color-mix(in srgb, var(--accent) 18%, var(--raised));
+  color: var(--text);
+}
+
+.size-seg.unknown {
+  background: var(--raised);
+  color: var(--muted);
+}
+
+.size-tag {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 1px 6px;
+  border-radius: var(--r-sm);
+  background: var(--raised);
+  color: var(--muted);
+}
+
+.size-tag.large {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.size-tag.medium {
+  background: color-mix(in srgb, var(--accent) 60%, var(--raised));
+  color: var(--on-accent);
+}
+
+.pr-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pr-row {
+  background: var(--raised);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+}
+
+.pr-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pr-title {
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.pr-title:hover {
+  color: var(--accent);
+}
+
+.pr-meta,
+.pr-stat {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.pr-summary {
+  margin: 4px 0;
+  font-size: 14px;
+}
+
+.add {
+  color: var(--success);
+}
+
+.del {
+  color: var(--danger);
+}

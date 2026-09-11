@@ -1,0 +1,20 @@
+{
+  "github": {
+    "command": "gh",
+    "repos": ["owner/repo", "owner/other-repo"],
+    "orgs": [],
+    "backfillDays": 90
+  },
+  "llm": {
+    "provider": "vllm",
+    "baseUrl": "http://localhost:8000/v1",
+    "model": "default"
+  },
+  "sync": {
+    "intervalMinutes": 30
+  },
+  "server": {
+    "port": 4100,
+    "host": "127.0.0.1"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "name": "git-observer",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A per-developer dashboard over GitHub activity, with LLM-classified pull requests.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "tsx watch server/index.ts --dev",
+    "build": "vite build",
+    "start": "tsx server/index.ts",
+    "sync": "tsx scripts/sync.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.server.json --noEmit"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.10.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.10.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3",
+    "vitest": "^4.1.10"
+  }
+}
