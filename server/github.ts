@@ -228,6 +228,46 @@ export function parsePrPage(repo: string, payload: unknown): PrPage {
   };
 }
 
+/** The PR an inline comment attributes to, via its parent review. */
+export type ReviewParent = Pick<ReviewActivity, "repo" | "prNumber" | "prAuthor">;
+
+/** Inline code comments from a `nodes(ids:[review ids])` query. Keyed back to
+ * the parent review, since a comment doesn't carry its PR's author. */
+export function parseReviewComments(
+  payload: unknown,
+  parents: Map<string, ReviewParent>,
+): (ReviewActivity & { id: string })[] {
+  const out: (ReviewActivity & { id: string })[] = [];
+  const list = (payload as { data?: { nodes?: unknown } } | null)?.data?.nodes;
+  if (!Array.isArray(list)) return out;
+  for (const raw of list) {
+    const node = raw as Record<string, unknown> | null;
+    const parent = parents.get(asString(node?.id));
+    const comments = (node?.comments as { nodes?: unknown } | null)?.nodes;
+    if (!parent || !Array.isArray(comments)) continue;
+    for (const c of comments) {
+      const n = c as Record<string, unknown> | null;
+      const id = asString(n?.id);
+      const actor = login(n?.author);
+      // publishedAt: batch-review comments are drafted before they're visible.
+      const at = asTime(n?.publishedAt) ?? asTime(n?.createdAt);
+      if (!id || !actor || at === null) continue;
+      out.push({
+        id,
+        repo: parent.repo,
+        prNumber: parent.prNumber,
+        prAuthor: parent.prAuthor,
+        actor,
+        kind: "inline",
+        state: null,
+        submittedAt: at,
+        url: asString(n?.url),
+      });
+    }
+  }
+  return out;
+}
+
 /** Filenames from `gh api repos/{repo}/pulls/{n}/files`. */
 export function parsePrFiles(values: unknown[]): string[] {
   const out: string[] = [];
@@ -298,6 +338,44 @@ export async function fetchPrPage(
   } catch {
     return { error: "unparseable gh output" };
   }
+}
+
+/** Inline comments live under reviews, not the PR's `comments`. Fetched by
+ * review id rather than nested in PR_QUERY: nesting costs 26 rate-limit points
+ * per page (charged per *possible* review), this ~1 per 100 reviews that exist. */
+const REVIEW_COMMENTS_QUERY = `
+query($ids:[ID!]!) {
+  nodes(ids:$ids) {
+    ... on PullRequestReview {
+      id
+      comments(first:50) { nodes { id createdAt publishedAt url author { login } } }
+    }
+  }
+}`;
+const NODES_PER_QUERY = 100; // GitHub's cap on nodes(ids:)
+
+export async function fetchReviewComments(
+  command: string,
+  reviews: (ReviewActivity & { id: string })[],
+): Promise<(ReviewActivity & { id: string })[] | { error: string }> {
+  const parents = new Map<string, ReviewParent>();
+  for (const r of reviews)
+    if (r.kind === "review")
+      parents.set(r.id, { repo: r.repo, prNumber: r.prNumber, prAuthor: r.prAuthor });
+  const ids = [...parents.keys()];
+  const out: (ReviewActivity & { id: string })[] = [];
+  for (let i = 0; i < ids.length; i += NODES_PER_QUERY) {
+    const args = ["api", "graphql", "-f", `query=${REVIEW_COMMENTS_QUERY}`];
+    for (const id of ids.slice(i, i + NODES_PER_QUERY)) args.push("-f", `ids[]=${id}`);
+    const res = await gh(command, args);
+    if (!res.ok) return { error: firstLine(res.stderr) || "gh call failed" };
+    try {
+      out.push(...parseReviewComments(JSON.parse(res.stdout), parents));
+    } catch {
+      return { error: "unparseable gh output" };
+    }
+  }
+  return out;
 }
 
 /** Body + changed filenames for one PR — the extra context the classifier

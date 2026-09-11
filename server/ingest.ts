@@ -8,7 +8,12 @@ import {
   upsertPullRequests,
   upsertReviewActivity,
 } from "./db.js";
-import { fetchPrDetail, fetchPrPage, listOrgRepos } from "./github.js";
+import {
+  fetchPrDetail,
+  fetchPrPage,
+  fetchReviewComments,
+  listOrgRepos,
+} from "./github.js";
 import { classifyPullRequest } from "./classify.js";
 
 // The sync loop: walk each tracked repo's pull requests into SQLite, then
@@ -91,18 +96,26 @@ async function syncRepo(
   const floor =
     watermark ?? now - (config.github.backfillDays ?? 90) * 86_400_000;
 
+  // Stamp the attempt time, not the (unreached) watermark — that's what the
+  // backoff measures from.
+  const fail = (error: string) => {
+    setWatermark(repo, now, error);
+    lastError = `${repo}: ${error}`;
+  };
+
   let cursor: string | null = null;
   for (let page = 0; page < MAX_PAGES_PER_REPO; page++) {
     const result = await fetchPrPage(config.github.command, repo, cursor);
-    if ("error" in result) {
-      // Stamp the attempt time, not the (unreached) watermark — that's what the
-      // backoff measures from.
-      setWatermark(repo, now, result.error);
-      lastError = `${repo}: ${result.error}`;
-      return;
-    }
+    if ("error" in result) return fail(result.error);
     if (result.prs.length > 0) upsertPullRequests(result.prs);
-    if (result.reviews.length > 0) upsertReviewActivity(result.reviews);
+    if (result.reviews.length > 0) {
+      upsertReviewActivity(result.reviews);
+      // Failing the repo (not skipping) matters: advancing the watermark past
+      // these PRs would lose their inline comments for good.
+      const inline = await fetchReviewComments(config.github.command, result.reviews);
+      if ("error" in inline) return fail(inline.error);
+      if (inline.length > 0) upsertReviewActivity(inline);
+    }
 
     // Ordered UPDATED_AT DESC: once a page's oldest entry predates the floor,
     // everything after it does too.

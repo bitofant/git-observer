@@ -184,6 +184,7 @@ export function PersonDashboard({
             <h2>Review of others</h2>
             <div className="stats">
               <Stat label="reviews" value={report.reviewing.reviews} />
+              <Stat label="code comments" value={report.reviewing.inlineComments} />
               <Stat label="comments" value={report.reviewing.comments} />
               <Stat label="PRs touched" value={report.reviewing.prsTouched} />
               <Stat label="people helped" value={report.reviewing.authorsHelped} />

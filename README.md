@@ -37,7 +37,8 @@ GitHub  ──gh CLI──▶  ingest  ──▶  SQLite  ──▶  LLM classif
 - All GitHub access goes through the **`gh` CLI**, which brings its own auth —
   so there is no token to manage in config.
 - A background **sync** walks each tracked repo's pull requests incrementally
-  and caches them in SQLite, along with reviews and comments.
+  and caches them in SQLite, along with reviews, conversation comments and
+  inline code comments.
 - A **classification pass** shows each new PR's title, description, file list
   and diffstat to an OpenAI-compatible LLM endpoint, and stores the size and
   summary it returns. Results are cached by content hash, so a PR is never
@@ -52,7 +53,8 @@ GitHub  ──gh CLI──▶  ingest  ──▶  SQLite  ──▶  LLM classif
   dashboard.
 - **Weekly view** — merged and opened PRs, a size histogram, and the diffstat
   for the week, with arrow/dropdown navigation across weeks.
-- **Review activity** — reviews and comments left on *other people's* PRs, with
+- **Review activity** — reviews, code comments and conversation comments left
+  on *other people's* PRs, with
   distinct PRs touched and people helped, so volume on a single thread doesn't
   masquerade as breadth.
 - **Degrades honestly** — with no LLM endpoint you still get counts, diffstats

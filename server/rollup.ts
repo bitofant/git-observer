@@ -94,6 +94,7 @@ export function buildWeeklyReport(
     reviewing: {
       reviews: theirs.filter((r) => r.kind === "review").length,
       comments: theirs.filter((r) => r.kind === "comment").length,
+      inlineComments: theirs.filter((r) => r.kind === "inline").length,
       // Distinct PRs, so 30 comments on one PR isn't 30 PRs' worth of review.
       prsTouched: new Set(theirs.map((r) => key(r.repo, r.prNumber))).size,
       authorsHelped: new Set(theirs.map((r) => r.prAuthor.toLowerCase())).size,
