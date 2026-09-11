@@ -150,6 +150,30 @@ describe("buildWeeklyReport — reviewing", () => {
     expect(r.reviewing).toMatchObject({ reviews: 1, comments: 1 });
   });
 
+  it("counts inline code comments separately from conversation comments", () => {
+    const r = report(
+      [],
+      [
+        review({ kind: "comment", state: null, prNumber: 1 }),
+        review({ kind: "inline", state: null, prNumber: 2 }),
+        review({ kind: "inline", state: null, prNumber: 2 }),
+      ],
+    );
+    expect(r.reviewing).toMatchObject({
+      comments: 1,
+      inlineComments: 2,
+      prsTouched: 2,
+    });
+  });
+
+  it("excludes inline replies on the person's OWN PR", () => {
+    const r = report(
+      [],
+      [review({ kind: "inline", state: null, prAuthor: "alice" })],
+    );
+    expect(r.reviewing).toMatchObject({ inlineComments: 0, prsTouched: 0 });
+  });
+
   it("excludes comments on the person's OWN PR", () => {
     // Otherwise a chatty author looks like an engaged reviewer.
     const r = report([], [review({ prAuthor: "alice", kind: "comment" })]);

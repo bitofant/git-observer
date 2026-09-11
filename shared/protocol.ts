@@ -57,14 +57,15 @@ export interface PrWithInsight extends PullRequest {
 }
 
 /** Review activity *on someone else's* PR — the "is this person engaged in
- * review?" signal. `kind` separates a formal review verdict from a plain
- * inline/issue comment, because they mean different things. */
+ * review?" signal. `kind` separates a formal review verdict, a conversation
+ * comment, and an inline comment on a code line, because they mean different
+ * things. */
 export interface ReviewActivity {
   repo: string;
   prNumber: number;
   prAuthor: string;
   actor: string;
-  kind: "review" | "comment";
+  kind: "review" | "comment" | "inline";
   /** Only set for kind "review". */
   state: "approved" | "changes_requested" | "commented" | null;
   submittedAt: number;
@@ -90,7 +91,10 @@ export interface WeeklyReport {
   reviewing: {
     /** Reviews/comments this person left on OTHER people's PRs. */
     reviews: number;
+    /** Conversation comments on the PR itself. */
     comments: number;
+    /** Comments on specific code lines — the most common review style. */
+    inlineComments: number;
     /** Distinct PRs touched, so 30 comments on one PR isn't 30 PRs of review. */
     prsTouched: number;
     /** Distinct PR authors helped — breadth of review, not just volume. */

@@ -4,6 +4,7 @@ import {
   parseJsonStream,
   parsePrPage,
   parseRepoList,
+  parseReviewComments,
   splitRepo,
 } from "./github.js";
 
@@ -213,6 +214,91 @@ describe("parsePrPage", () => {
       page([], { hasNextPage: true, endCursor: "CUR" }),
     );
     expect(out).toMatchObject({ hasNextPage: true, endCursor: "CUR" });
+  });
+});
+
+describe("parseReviewComments", () => {
+  const parents = new Map([
+    ["R1", { repo: "o/r", prNumber: 7, prAuthor: "alice" }],
+  ]);
+  const comment = (over: Record<string, unknown> = {}) => ({
+    id: "IC1",
+    createdAt: "2026-09-08T09:00:00Z",
+    publishedAt: "2026-09-08T10:00:00Z",
+    url: "https://github.com/o/r/pull/7#discussion_r1",
+    author: { login: "bob" },
+    ...over,
+  });
+  const nodes = (list: unknown[]) => ({ data: { nodes: list } });
+
+  it("maps inline comments onto their review's PR", () => {
+    const rows = parseReviewComments(
+      nodes([{ id: "R1", comments: { nodes: [comment()] } }]),
+      parents,
+    );
+    expect(rows).toEqual([
+      {
+        id: "IC1",
+        repo: "o/r",
+        prNumber: 7,
+        prAuthor: "alice",
+        actor: "bob",
+        kind: "inline",
+        state: null,
+        submittedAt: Date.parse("2026-09-08T10:00:00Z"),
+        url: "https://github.com/o/r/pull/7#discussion_r1",
+      },
+    ]);
+  });
+
+  it("buckets on publishedAt, not the earlier draft createdAt", () => {
+    // A batch review's comments are drafted before the review is submitted.
+    const [row] = parseReviewComments(
+      nodes([{ id: "R1", comments: { nodes: [comment()] } }]),
+      parents,
+    );
+    expect(row.submittedAt).toBe(Date.parse("2026-09-08T10:00:00Z"));
+    const [fallback] = parseReviewComments(
+      nodes([
+        { id: "R1", comments: { nodes: [comment({ publishedAt: null })] } },
+      ]),
+      parents,
+    );
+    expect(fallback.submittedAt).toBe(Date.parse("2026-09-08T09:00:00Z"));
+  });
+
+  it("skips comments whose review isn't a known parent", () => {
+    // Unknown parent = nothing to attribute to (e.g. a dropped PENDING review).
+    expect(
+      parseReviewComments(
+        nodes([{ id: "R9", comments: { nodes: [comment()] } }]),
+        parents,
+      ),
+    ).toEqual([]);
+  });
+
+  it("skips unattributable comments and survives junk", () => {
+    expect(
+      parseReviewComments(
+        nodes([
+          null,
+          { id: "R1", comments: null },
+          {
+            id: "R1",
+            comments: {
+              nodes: [
+                comment({ author: null }),
+                comment({ id: "" }),
+                comment({ publishedAt: null, createdAt: null }),
+              ],
+            },
+          },
+        ]),
+        parents,
+      ),
+    ).toEqual([]);
+    for (const junk of [null, {}, { data: null }, { data: { nodes: null } }])
+      expect(parseReviewComments(junk, parents)).toEqual([]);
   });
 });
 

@@ -100,6 +100,15 @@ db.exec(
    )`,
 );
 
+// Bump when ingest starts capturing new data: clearing watermarks makes the next
+// sync re-walk the backfill window, so old PRs gain the new rows too.
+// v1: inline review comments.
+const INGEST_VERSION = 1;
+if ((db.pragma("user_version", { simple: true }) as number) < INGEST_VERSION) {
+  db.exec("DELETE FROM sync_state");
+  db.pragma(`user_version = ${INGEST_VERSION}`);
+}
+
 // --- people ----------------------------------------------------------------
 
 const rowToPerson = (r: {
